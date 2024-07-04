@@ -6,11 +6,11 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include<iostream>
 
 const int NUM = 3;
-    const int SIZE = NUM * sizeof(int);
-    const char* NAME = "SHM";
-
+const int SIZE = NUM * sizeof(int);
+const char* NAME = "SHM";
 
 int main(){
     int shm_fd;
@@ -22,17 +22,14 @@ int main(){
         return EXIT_FAILURE;
     }
 
-    ftruncate(shm_fd, SIZE);
-
     int *ptr = (int*)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     for (size_t i = 0; i < NUM; i++)
     {
-        ptr[i] = i;
+        std::cout << ptr[i];
     }
 
-    munmap(ptr, SIZE);
+    std::cout << "Hello, World!";
 
-    close(shm_fd);
-
-    return EXIT_SUCCESS;
+    shm_unlink(NAME);
+    return 0;
 }
