@@ -1,14 +1,13 @@
 #include <cstdint>
 #include <cstring>
 
-union ValueType
-    {
-        float fl;
-        double db;
-        int32_t i;
-        uint64_t ui;
-        char ch[32];
-    };
+union ValueType{
+    float fl;
+    double db;
+    int32_t i;
+    uint64_t ui;
+    char ch[32];
+};
 
 struct Record{
     public:
@@ -17,6 +16,7 @@ struct Record{
     {
         std::memcpy(Name, name, 64);
     };
+
     private:
         uint32_t id;
         char Name[64];
