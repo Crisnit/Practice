@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cstring>
+#include <chrono>
 
 union ValueType{
     float fl;
@@ -13,10 +14,11 @@ template <typename T>
 struct Record{
 public:
     enum Type {float_type, double_type, int_type, uint_type, char_type};
-    Record(uint32_t id, char name[64], uint64_t timestamp, Type type, T input_value): id(id), timestamp(timestamp), type(type)
+    Record(uint32_t id, char name[64], uint64_t timestamp, Type type, T input_value): id(id), type(type)
     {
         std::memcpy(Name, name, 64);
         defineValueType(input_value);
+        timestamp = std::chrono::system_clock::now();
     };
 private:
     void defineValueType(T input_value){
