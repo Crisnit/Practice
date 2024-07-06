@@ -47,3 +47,9 @@ private:
     Type type;
     ValueType value;
 };
+
+class SharedMemory{
+
+private:
+    char m_name[16];
+};
