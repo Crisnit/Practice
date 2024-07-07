@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 const int NUM = 3;
-    const int SIZE = NUM * sizeof(int);
+    const int SIZE = NUM * sizeof(double);
     const char* NAME = "SHM";
 
 
@@ -24,10 +24,10 @@ int main(){
 
     ftruncate(shm_fd, SIZE);
 
-    int *ptr = (int*)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    for (size_t i = 0; i < NUM; i++)
+    double *ptr = (double*)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    for (size_t i = 0; i < SIZE; i+=sizeof(double))
     {
-        ptr[i] = i;
+        ptr[i] = 1.12312312;
     }
 
     munmap(ptr, SIZE);

@@ -10,17 +10,17 @@ union ValueType{
     char ch[32];
 };
 
-template <typename T>
 struct Record{
 public:
     enum Type {float_type, double_type, int_type, uint_type, char_type};
-    Record(uint32_t id, char name[64], Type type, T input_value): id(id), type(type)
+    template <typename T> Record(uint32_t id, char name[64], Type type, T input_value): id(id), type(type)
     {
         std::memcpy(Name, name, 64);
         setValue(input_value);
         timestamp = getTimestamp();
     };
 private:
+    template <typename T>
     void setValue(T input_value){
         switch (type)
         {
@@ -43,9 +43,8 @@ private:
     }
 
     uint64_t getTimestamp(){
-        auto time = std::chrono::high_resolution_clock::now().time_since_epoch();
-        return std::chrono::duration_cast<std::chrono::microseconds>(
-        time).count();
+        std::chrono::_V2::system_clock::duration time = std::chrono::high_resolution_clock::now().time_since_epoch();
+        return std::chrono::duration_cast<std::chrono::microseconds>(time).count();
     }
 
     uint32_t id;
@@ -61,4 +60,5 @@ private:
     char m_name[16];
     int m_arr_count;
     int m_memory_size;
+    int m_elem_size = sizeof(Record);
 };
