@@ -27,8 +27,9 @@ int main(){
     {
         std::cout << ptr[i]<<std::endl;
     }
-
-    std::cout << "Hello, World!";
+    struct stat buf;
+    fstat(shm_fd, &buf);
+    std::cout << buf.st_size;
 
     shm_unlink(NAME);
 

@@ -8,15 +8,15 @@
 #include <unistd.h>
 
 const int NUM = 3;
-    const int SIZE = NUM * sizeof(double);
-    const char* NAME = "SHM";
+const int SIZE = NUM * sizeof(double);
+const char* NAME = "SHM";
 
 
 int main(){
     int shm_fd;
 
 
-    shm_fd = shm_open(NAME, O_CREAT | O_RDWR, 0666);
+    shm_fd = shm_open(NAME, O_CREAT | O_EXCL | O_RDWR, 0666);
     if (shm_fd < 0) {
         perror("shm_open()");
         return EXIT_FAILURE;

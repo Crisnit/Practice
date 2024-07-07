@@ -1,6 +1,9 @@
 #include <cstdint>
 #include <cstring>
 #include <chrono>
+#include <sys/mman.h>
+
+const int RECORD_SIZE = sizeof(Record);
 
 union ValueType{
     float fl;
@@ -13,31 +16,32 @@ union ValueType{
 struct Record{
 public:
     enum Type {float_type, double_type, int_type, uint_type, char_type};
-    template <typename T> Record(uint32_t id, char name[64], Type type, T input_value): id(id), type(type)
+    template <typename T> Record(uint32_t id, char name[64], Type type, T input_value): m_id(id), m_type(type)
     {
-        std::memcpy(Name, name, 64);
+        std::memcpy(m_name, name, 64);
         setValue(input_value);
-        timestamp = getTimestamp();
+        m_timestamp = getTimestamp();
     };
+
 private:
     template <typename T>
     void setValue(T input_value){
-        switch (type)
+        switch (m_type)
         {
         case float_type:
-            value.fl = input_value;
+            m_value.fl = input_value;
             break;
         case double_type:
-            value.db = input_value;
+            m_value.db = input_value;
             break;
         case int_type:
-            value.i = input_value;
+            m_value.i = input_value;
             break;
         case uint_type:
-            value.ui = input_value;
+            m_value.ui = input_value;
             break;
         case char_type:
-            std::memcpy(value.ch, input_value, 32);
+            std::memcpy(m_value.ch, input_value, 32);
             break;
         }
     }
@@ -47,18 +51,123 @@ private:
         return std::chrono::duration_cast<std::chrono::microseconds>(time).count();
     }
 
-    uint32_t id;
-    char Name[64];
-    uint64_t timestamp;
-    Type type;
-    ValueType value;
+    uint32_t m_id;
+    char m_name[64];
+    uint64_t m_timestamp;
+    Type m_type;
+    ValueType m_value;
 };
 
-class SharedMemory{
+struct SharedMemory{
+public:
+    void setName(char &name){
+        std::memcpy(m_name, &name, 16);
+    }
+
+    void setArrSize(int array_size){
+        m_arr_size = array_size;
+    }
+
+    void setMemSize(int memory_size){
+        m_memory_size = memory_size;
+    }
+    
+    ~SharedMemory(){
+        shm_unlink(m_name);
+    }
 
 private:
     char m_name[16];
+    int m_arr_size;
     int m_arr_count;
     int m_memory_size;
-    int m_elem_size = sizeof(Record);
+    int m_elem_size = RECORD_SIZE;
 };
+
+struct SharedMemoryServer : SharedMemory{
+public:
+    SharedMemoryServer(char& name, int arr_size): m_arr_size(arr_size), m_arr_count(0){
+        std::memcpy(m_name, &name, 16);
+        m_memory_size = m_elem_size * m_arr_size;
+    }
+private:
+    char m_name[16];
+    int m_arr_size;
+    int m_arr_count;
+    int m_memory_size;
+    int m_elem_size = RECORD_SIZE;
+}
+
+/*class SharedMemoryBuilder{
+public:
+    virtual void buildName(char &name) = 0;
+
+    virtual void buildArrSize(int array_size) = 0;
+
+    virtual void buildMemSize(int array_size) = 0;
+
+    virtual SharedMemory getResult() = 0;
+};
+
+class ServerSharedMemoryBuilder : public SharedMemoryBuilder{
+public:
+    ServerSharedMemoryBuilder(){
+        m_shared_memory = SharedMemory();
+    }
+
+    void buildName(char &name) override{
+        m_shared_memory.setName(name);
+    }
+
+    void buildArrSize(int array_size) override{
+        m_shared_memory.setArrSize(array_size);
+    }
+
+    void buildMemSize(int array_size) override{
+        int memory_size = array_size * RECORD_SIZE;
+        m_shared_memory.setMemSize(memory_size);
+    }
+
+    SharedMemory getResult() override{
+        return m_shared_memory;
+    }
+    private:
+    SharedMemory m_shared_memory;
+};
+
+class ClientSharedMemoryBuilder : public SharedMemoryBuilder{
+public:
+    ClientSharedMemoryBuilder(){
+        m_shared_memory = SharedMemory();
+    }
+
+    void buildName(char &name) override{
+        m_shared_memory.setName(name);
+    }
+
+    void buildArrSize(int array_size) override{
+        m_shared_memory.setArrSize(array_size);
+    }
+
+    void buildMemSize(int array_size) override{
+        int memory_size = array_size * RECORD_SIZE;
+        m_shared_memory.setMemSize(memory_size);
+    }
+
+    SharedMemory getResult() override{
+        return m_shared_memory;
+    }
+    private:
+    SharedMemory m_shared_memory;
+};
+
+class SHMApi{
+public:
+    SHMApi(){
+        m_shm = SharedMemory();
+    }
+    void buildServer(char &name, int arr_size);
+private:
+    Record* m_ptr;
+    SharedMemory m_shm;
+};*/
