@@ -1,7 +1,12 @@
 #include <cstdint>
 #include <cstring>
 #include <chrono>
+#include <sys/shm.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
+#include <mutex>
+#include <unistd.h>
+#include <fcntl.h>
 
 union ValueType{
     float fl;
@@ -57,39 +62,70 @@ private:
     ValueType m_value;
 };
 
-struct SharedMemory{
+class SharedMemoryClient{
 public:
-    void setName(char &name){
+    SharedMemoryClient(char& name){
         std::memcpy(m_name, &name, 16);
-    }
 
-    void setArrSize(int array_size){
-        m_arr_size = array_size;
-    }
+        m_shm_fd = shm_open(m_name, O_CREAT | O_RDWR, 0666);
 
-    void setMemSize(int memory_size){
-        m_memory_size = memory_size;
+        struct stat buf;
+        fstat(m_shm_fd, &buf);
+        m_memory_size = buf.st_size;
+
+        m_arr_size = m_memory_size / m_elem_size;
+
+        m_arr_ptr = (Record*) mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
     }
     
-    ~SharedMemory(){
-        shm_unlink(m_name);
+    ~SharedMemoryClient(){
+        munmap(m_arr_ptr, m_memory_size);
+        close(m_shm_fd);
     }
 
 private:
+    int m_shm_fd;
+    Record* m_arr_ptr;
     char m_name[16];
     int m_arr_size;
-    int m_arr_count;
     int m_memory_size;
     int m_elem_size = sizeof(Record);
 };
 
-struct SharedMemoryServer : SharedMemory{
+class SharedMemoryServer{
 public:
     SharedMemoryServer(char& name, int arr_size): m_arr_size(arr_size), m_arr_count(0){
         std::memcpy(m_name, &name, 16);
-        m_memory_size = m_elem_size * m_arr_size;
+
+        m_shm_fd = shm_open(m_name, O_CREAT | O_EXCL | O_RDWR, 0666);
+        if (m_shm_fd < 0) {
+            throw std::runtime_error("Shared memory with this name already exists");
+        }
+
+        m_memory_size = m_arr_size * m_elem_size;
+
+        ftruncate(m_shm_fd, m_memory_size);
+
+        m_arr_ptr = (Record*)mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
     }
+    
+    void addRecord(Record record){
+        if (m_arr_size > m_arr_count)
+        {
+            std::mutex lock;
+            m_arr_ptr[m_arr_count*m_elem_size] = record;
+            std::mutex unlock;
+        }
+        
+    }
+
+    ~SharedMemoryServer(){
+        shm_unlink(m_name);
+    }
+
 private:
+    int m_shm_fd;
+    Record* m_arr_ptr;
     char m_name[16];
     int m_arr_size;
     int m_arr_count;
