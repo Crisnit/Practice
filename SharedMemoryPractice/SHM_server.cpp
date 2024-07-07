@@ -25,7 +25,7 @@ int main(){
     ftruncate(shm_fd, SIZE);
 
     double *ptr = (double*)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    for (size_t i = 0; i < SIZE; i+=sizeof(double))
+    for (size_t i = 0; i < NUM; i++)
     {
         ptr[i] = 1.12312312;
     }

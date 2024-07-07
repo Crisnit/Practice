@@ -17,21 +17,20 @@ const char* NAME = "SHM";
 std::mutex mutex;
 
 void SHM_server(){
-    mutex.lock();
+    
     int shm_fd;
 
 
     shm_fd = shm_open(NAME, O_CREAT | O_EXCL | O_RDWR, 0666);
     if (shm_fd < 0) {
-        shm_unlink(NAME);
-        shm_fd = shm_open(NAME, O_CREAT | O_EXCL | O_RDWR, 0666);
+        throw std::runtime_error("Shared memory with this name already exists");
     }
     
     ftruncate(shm_fd, SIZE);
-
     double *ptr = (double*)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    mutex.lock();
     std::this_thread::sleep_for(10000ms);
-    for (size_t i = 0; i < SIZE; i+=sizeof(double))
+    for (size_t i = 0; i < NUM; i++)
     {
         ptr[i] = 1.12312312;
     }
@@ -43,14 +42,14 @@ void SHM_server(){
 }
 
 void SHM_client(){
-    mutex.lock();
+    
     int shm_fd;
 
 
     shm_fd = shm_open(NAME, O_CREAT | O_RDWR, 0666);
-
     double *ptr = (double*)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    for (size_t i = 0; i < SIZE; i+=sizeof(double))
+    mutex.lock();
+    for (size_t i = 0; i < NUM; i++)
     {
         std::cout << ptr[i]<<std::endl;
     }

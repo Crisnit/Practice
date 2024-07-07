@@ -7,6 +7,7 @@
 #include <mutex>
 #include <unistd.h>
 #include <fcntl.h>
+#include <iostream>
 
 union ValueType{
     float fl;
@@ -18,7 +19,7 @@ union ValueType{
 
 struct Record{
 public:
-    enum Type {float_type, double_type, int_type, uint_type, char_type};
+    enum Type {float_type, double_type, int_type, uint_type, char_ptr_type};
     template <typename T> Record(uint32_t id, char name[64], Type type, T input_value): m_id(id), m_type(type)
     {
         std::memcpy(m_name, name, 64);
@@ -44,8 +45,8 @@ private:
         case uint_type:
             m_value.ui = input_value;
             break;
-        case char_type:
-            std::memcpy(m_value.ch, input_value, 32);
+        case char_ptr_type:
+            std::memcpy(m_value.ch, &input_value, 32);
             break;
         }
     }
@@ -62,7 +63,60 @@ private:
     ValueType m_value;
 };
 
-class SharedMemoryClient{
+class SharedMemory{
+public:
+    SharedMemory(char& name, int arr_size): m_arr_size(arr_size), m_arr_count(0){
+        std::memcpy(m_name, &name, 16);
+
+        m_shm_fd = shm_open(m_name, O_CREAT | O_EXCL | O_RDWR, 0666);
+        if (m_shm_fd < 0) {
+            throw std::runtime_error("Shared memory with this name already exists");
+        }
+
+        m_memory_size = m_arr_size * m_elem_size;
+
+        ftruncate(m_shm_fd, m_memory_size);
+
+        m_arr_ptr = (Record*)mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
+    }
+    
+    void addRecord(Record record){
+        if (m_arr_size > m_arr_count)
+        {
+            std::mutex lock;
+            m_arr_ptr[m_arr_count] = record;
+            m_arr_count++;
+            std::mutex unlock;
+        }
+        
+    }
+
+    void getRecords(){
+        if (m_arr_count > 0){
+            std::mutex lock;
+            for (size_t i = 0; i < m_arr_count; i++)
+            {
+                std::cout << &m_arr_ptr[i] << std::endl;
+            }
+            std::mutex unlock;
+        }
+    }
+
+    ~SharedMemory(){
+        shm_unlink(m_name);
+    }
+
+private:
+    int m_shm_fd;
+    Record* m_arr_ptr;
+    char m_name[16];
+    int m_arr_size;
+    int m_arr_count;
+    int m_memory_size;
+    int m_elem_size = sizeof(Record);
+};
+
+/*class SharedMemoryClient{
 public:
     SharedMemoryClient(char& name){
         std::memcpy(m_name, &name, 16);
@@ -92,48 +146,7 @@ private:
     int m_elem_size = sizeof(Record);
 };
 
-class SharedMemoryServer{
-public:
-    SharedMemoryServer(char& name, int arr_size): m_arr_size(arr_size), m_arr_count(0){
-        std::memcpy(m_name, &name, 16);
-
-        m_shm_fd = shm_open(m_name, O_CREAT | O_EXCL | O_RDWR, 0666);
-        if (m_shm_fd < 0) {
-            throw std::runtime_error("Shared memory with this name already exists");
-        }
-
-        m_memory_size = m_arr_size * m_elem_size;
-
-        ftruncate(m_shm_fd, m_memory_size);
-
-        m_arr_ptr = (Record*)mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
-    }
-    
-    void addRecord(Record record){
-        if (m_arr_size > m_arr_count)
-        {
-            std::mutex lock;
-            m_arr_ptr[m_arr_count*m_elem_size] = record;
-            std::mutex unlock;
-        }
-        
-    }
-
-    ~SharedMemoryServer(){
-        shm_unlink(m_name);
-    }
-
-private:
-    int m_shm_fd;
-    Record* m_arr_ptr;
-    char m_name[16];
-    int m_arr_size;
-    int m_arr_count;
-    int m_memory_size;
-    int m_elem_size = sizeof(Record);
-};
-
-/*class SharedMemoryBuilder{
+class SharedMemoryBuilder{
 public:
     virtual void buildName(char &name) = 0;
     virtual void buildArrSize(int array_size) = 0;
