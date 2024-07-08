@@ -9,6 +9,12 @@
 #include <fcntl.h>
 #include <iostream>
 
+class SharedMemoryMutex{
+public:
+    void lock();
+    void unlock();
+}
+
 union ValueType{
     float fl;
     double db;
@@ -28,7 +34,6 @@ public:
     };
 
 
-private:
     template <typename T>
     void setValue(T input_value){
         switch (m_type)
@@ -63,57 +68,65 @@ private:
     ValueType m_value;
 };
 
+struct SharedMemoryData{
+    pthread_mutex_t m_lock;
+    uint32_t m_arr_count;
+    Record m_arr[0];
+}
+
 class SharedMemory{
 public:
-    SharedMemory(char& name, int arr_size): m_arr_size(arr_size), m_arr_count(0){
-        std::memcpy(m_name, &name, 16);
-
+    SharedMemory(const std::string& t_name, int entity_num): m_name(t_name), m_arr_count(entity_num){
         m_shm_fd = shm_open(m_name, O_CREAT | O_EXCL | O_RDWR, 0666);
         if (m_shm_fd < 0) {
             throw std::runtime_error("Shared memory with this name already exists");
         }
 
-        m_memory_size = m_arr_size * m_elem_size;
+        m_memory_size = entity_num * sizeof(Record) + sizeof(SharedMemoryData);
 
         ftruncate(m_shm_fd, m_memory_size);
 
-        m_arr_ptr = (Record*)mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
+        m_data_ptr = (SharedMemoryData*)mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
+        m_data_ptr->m_arr_count = m_arr_count;
+        m_mutex.init(&m_data_ptr->m_lock);
+
+        for (size_t i = 0; i < m_arr_count; i++) {
+            m_data_ptr->m_arr[i].clear();
+           std::cout << m_data_ptr->m_arr[i].m_id;
+        }
     }
     
-    void addRecord(Record record){
-        if (m_arr_size > m_arr_count)
-        {
-            std::mutex lock;
-            m_arr_ptr[m_arr_count] = record;
-            m_arr_count++;
-            std::mutex unlock;
+    void addRecord(const Record &t_record) {
+        if (m_arr_size > m_data_ptr->m_arr_count) {
+            m_mutex.lock();
+            m_data_ptr->m_arr[m_data_ptr->m_arr_count] = t_record;
+            m_data_ptr->m_arr_count++;
+            m_mutex.unlock();
         }
-        
     }
 
-    void getRecords(){
-        if (m_arr_count > 0){
-            std::mutex lock;
-            for (size_t i = 0; i < m_arr_count; i++)
-            {
+    void getRecords() {
+        if (m_data_ptr->m_arr_count > 0) {
+            m_mutex.lock();
+            for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
                 std::cout << &m_arr_ptr[i] << std::endl;
             }
-            std::mutex unlock;
+            m_mutex.unlock();
         }
     }
 
-    ~SharedMemory(){
+    ~SharedMemory() {
         shm_unlink(m_name);
     }
 
 private:
     int m_shm_fd;
-    Record* m_arr_ptr;
-    char m_name[16];
+    SharedMemoryData* m_data_ptr;
+    std::string m_name;
     int m_arr_size;
-    int m_arr_count;
     int m_memory_size;
-    int m_elem_size = sizeof(Record);
+    int m_elem_size = sizeof(SharedMemoryData);
+    SharedMemoryMutex m_mutex;
 };
 
 /*class SharedMemoryClient{
