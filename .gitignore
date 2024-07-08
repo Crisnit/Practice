@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+Record
+Test
+.vscode/c_cpp_properties.json
+.vscode/settings.json
+MutexPractice/Mutex
+SharedMemoryPractice/SHM
+SharedMemoryPractice/SHM_client
+SharedMemoryPractice/SHM_server
+.vscode/settings.json
+.vscode/settings.json
