@@ -108,7 +108,7 @@ struct SharedMemoryData {
 
 class SharedMemory {
 public:
-    SharedMemory(const std::string &t_name, int t_entity_num): m_name(t_name), m_arr_capacity(t_entity_num) {
+    SharedMemory(const std::string &t_name, int t_entity_num): m_name(t_name) {
         m_shm_fd = shm_open(m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
         if (m_shm_fd < 0) {
             shm_unlink(m_name.data());
@@ -130,7 +130,7 @@ public:
     }
     
     void addRecord(const Record &t_record) {
-        if (m_arr_capacity > m_data_ptr->m_arr_count) {
+        if (m_data_ptr->m_arr_capacity > m_data_ptr->m_arr_count) {
             m_mutex.lock(m_data_ptr->m_lock);
 
             m_data_ptr->m_arr[m_data_ptr->m_arr_count] = t_record;
@@ -150,6 +150,11 @@ public:
         }
     }
 
+    void getStats() {
+        m_mutex.lock(m_data_ptr->m_lock);
+        std::cout << "Array capacity: " << m_data_ptr->m_arr_capacity << " " << "Array count: " << m_data_ptr->m_arr_count << std::endl;
+    }
+
     ~SharedMemory() {
         shm_unlink(m_name.data());
     }
@@ -158,7 +163,6 @@ private:
     int m_shm_fd;
     SharedMemoryData* m_data_ptr;
     std::string m_name;
-    int m_arr_capacity;
     int m_memory_size;
     int m_elem_size = sizeof(SharedMemoryData);
     SharedMemoryMutex m_mutex;
