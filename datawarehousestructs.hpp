@@ -108,6 +108,16 @@ struct SharedMemoryData {
 
 class SharedMemory {
 public:
+    void setName(const std::string &t_name) {
+        m_name = t_name;
+    }
+
+    void setMemSize(int t_memory_size) {
+        m_memory_size = t_memory_size;
+    }
+
+    SharedMemory();
+
     SharedMemory(const std::string &t_name, int t_entity_num): m_name(t_name) {
         m_shm_fd = shm_open(m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
         if (m_shm_fd < 0) {
@@ -159,7 +169,6 @@ public:
         shm_unlink(m_name.data());
     }
 
-private:
     int m_shm_fd;
     SharedMemoryData* m_data_ptr;
     std::string m_name;
@@ -198,34 +207,50 @@ private:
     int m_elem_size = sizeof(Record);
 };*/
 
-// class SharedMemoryBuilder{
-// public:
-//     virtual void buildName(char &name) = 0;
-//     virtual void buildArrSize(int array_size) = 0;
-//     virtual void buildMemSize(int array_size) = 0;
-//     virtual SharedMemory getResult() = 0;
-// };
-// class ServerSharedMemoryBuilder : public SharedMemoryBuilder{
-// public:
-//     ServerSharedMemoryBuilder(){
-//         m_shared_memory = SharedMemory();
-//     }
-//     void buildName(char &name) override{
-//         m_shared_memory.setName(name);
-//     }
-//     void buildArrSize(int array_size) override{
-//         m_shared_memory.setArrSize(array_size);
-//     }
-//     void buildMemSize(int array_size) override{
-//         int memory_size = array_size * RECORD_SIZE;
-//         m_shared_memory.setMemSize(memory_size);
-//     }
-//     SharedMemory getResult() override{
-//         return m_shared_memory;
-//     }
-//     private:
-//     SharedMemory m_shared_memory;
-// };
+class SharedMemoryBuilder {
+public:
+    virtual void buildName() = 0;
+    virtual void buildMemSize() = 0;
+    virtual SharedMemory getResult() = 0;
+};
+
+class ServerSharedMemoryBuilder : public SharedMemoryBuilder {
+public:
+    ServerSharedMemoryBuilder(const std::string &t_name, int t_entity_num): m_name(t_name), m_entity_num(t_entity_num) {
+        m_shared_memory = SharedMemory();
+    }
+    void buildName() override {
+        m_shared_memory.setName(m_name);
+    }
+
+    void buildMemSize() override {
+        int memory_size = m_entity_num * sizeof(Record) + sizeof(SharedMemoryData);
+        m_shared_memory.setMemSize(memory_size);
+    }
+    SharedMemory getResult() override {
+        m_shared_memory.m_shm_fd = shm_open(m_shared_memory.m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
+        if (m_shared_memory.m_shm_fd < 0) {
+            shm_unlink(m_shared_memory.m_name.data());
+            throw std::runtime_error("Shared memory with this name already exists");
+        }
+
+        ftruncate(m_shared_memory.m_shm_fd, m_shared_memory.m_memory_size);
+
+        m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, m_shared_memory.m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shared_memory.m_shm_fd, 0);
+        m_shared_memory.m_data_ptr->m_arr_capacity = m_entity_num;
+        m_shared_memory.m_mutex.init(m_shared_memory.m_data_ptr->m_lock);
+
+        for (size_t i = 0; i < m_entity_num; i++) {
+            m_shared_memory.m_data_ptr->m_arr[i].clear();
+           std::cout << m_shared_memory.m_data_ptr->m_arr[i].m_id;
+        }
+        return m_shared_memory;
+    }
+    private:
+    SharedMemory m_shared_memory;
+    std::string m_name;
+    int m_entity_num;
+};
 /*  
 class ClientSharedMemoryBuilder : public SharedMemoryBuilder{
 public:
@@ -235,7 +260,7 @@ public:
     void buildName(char &name) override{
         m_shared_memory.setName(name);
     }
-    void buildArrSize(int array_size) override{
+    void buildArrCapacity(int array_size) override{
         m_shared_memory.setArrSize(array_size);
     }
     void buildMemSize(int array_size) override{
@@ -248,13 +273,11 @@ public:
     private:
     SharedMemory m_shared_memory;
 };
-class SHMApi{
+*/
+class SharedMemoryDirector {
 public:
-    SHMApi(){
-        m_shm = SharedMemory();
+    void buildSharedMemory(SharedMemoryBuilder &sharedMemoryBuilder) {
+        sharedMemoryBuilder.buildName();
+        sharedMemoryBuilder.buildMemSize();
     }
-    void buildServer(char &name, int arr_size);
-private:
-    Record* m_ptr;
-    SharedMemory m_shm;
-};*/
+};
