@@ -11,9 +11,19 @@
 
 class SharedMemoryMutex {
 public:
-    void init(pthread_mutex_t &t_lock);
-    void lock();
-    void unlock();
+    void init(pthread_mutex_t &t_lock) {
+        pthread_mutexattr_t attr;
+
+        pthread_mutexattr_init(&attr);
+        pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+        pthread_mutex_init(&t_lock, &attr);
+    };
+    void lock(pthread_mutex_t &t_lock) {
+        pthread_mutex_lock(&t_lock);
+    };
+    void unlock(pthread_mutex_t &t_lock) {
+        pthread_mutex_unlock(&t_lock);
+    };
 };
 
 union ValueType {
@@ -27,8 +37,7 @@ union ValueType {
 struct Record{
 public:
     enum Type {float_type, double_type, int_type, uint_type, char_ptr_type};
-    template <typename T> Record(uint32_t id, char name[64], Type type, T input_value): m_id(id), m_type(type) {
-        std::memcpy(m_name, name, 64);
+    template <typename T> Record(uint32_t id, std::string &t_name, Type type, T input_value): m_id(id), m_type(type), m_name(t_name) {
         setValue(input_value);
         m_timestamp = getTimestamp();
     };
@@ -65,7 +74,7 @@ public:
     }
 
     uint32_t m_id;
-    char m_name[64];
+    std::string m_name;
     uint64_t m_timestamp;
     Type m_type;
     ValueType m_value;
@@ -79,7 +88,7 @@ struct SharedMemoryData {
 
 class SharedMemory {
 public:
-    SharedMemory(const std::string& t_name, int t_entity_num): m_name(t_name) {
+    SharedMemory(const std::string &t_name, int t_entity_num): m_name(t_name) {
         m_shm_fd = shm_open(m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
         if (m_shm_fd < 0) {
             throw std::runtime_error("Shared memory with this name already exists");
@@ -101,22 +110,22 @@ public:
     
     void addRecord(const Record &t_record) {
         if (m_arr_size > m_data_ptr->m_arr_count) {
-            m_mutex.lock();
+            m_mutex.lock(m_data_ptr->m_lock);
 
             m_data_ptr->m_arr[m_data_ptr->m_arr_count] = t_record;
             m_data_ptr->m_arr_count++;
 
-            m_mutex.unlock();
+            m_mutex.unlock(m_data_ptr->m_lock);
         }
     }
 
     void getRecords() {
         if (m_data_ptr->m_arr_count > 0) {
-            m_mutex.lock();
+            m_mutex.lock(m_data_ptr->m_lock);
             for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
                 std::cout << &m_data_ptr->m_arr[i] << std::endl;
             }
-            m_mutex.unlock();
+            m_mutex.unlock(m_data_ptr->m_lock);
         }
     }
 
