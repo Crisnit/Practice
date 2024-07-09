@@ -196,36 +196,37 @@ private:
     int m_arr_size;
     int m_memory_size;
     int m_elem_size = sizeof(Record);
-};
+};*/
 
-class SharedMemoryBuilder{
-public:
-    virtual void buildName(char &name) = 0;
-    virtual void buildArrSize(int array_size) = 0;
-    virtual void buildMemSize(int array_size) = 0;
-    virtual SharedMemory getResult() = 0;
-};
-class ServerSharedMemoryBuilder : public SharedMemoryBuilder{
-public:
-    ServerSharedMemoryBuilder(){
-        m_shared_memory = SharedMemory();
-    }
-    void buildName(char &name) override{
-        m_shared_memory.setName(name);
-    }
-    void buildArrSize(int array_size) override{
-        m_shared_memory.setArrSize(array_size);
-    }
-    void buildMemSize(int array_size) override{
-        int memory_size = array_size * RECORD_SIZE;
-        m_shared_memory.setMemSize(memory_size);
-    }
-    SharedMemory getResult() override{
-        return m_shared_memory;
-    }
-    private:
-    SharedMemory m_shared_memory;
-};
+// class SharedMemoryBuilder{
+// public:
+//     virtual void buildName(char &name) = 0;
+//     virtual void buildArrSize(int array_size) = 0;
+//     virtual void buildMemSize(int array_size) = 0;
+//     virtual SharedMemory getResult() = 0;
+// };
+// class ServerSharedMemoryBuilder : public SharedMemoryBuilder{
+// public:
+//     ServerSharedMemoryBuilder(){
+//         m_shared_memory = SharedMemory();
+//     }
+//     void buildName(char &name) override{
+//         m_shared_memory.setName(name);
+//     }
+//     void buildArrSize(int array_size) override{
+//         m_shared_memory.setArrSize(array_size);
+//     }
+//     void buildMemSize(int array_size) override{
+//         int memory_size = array_size * RECORD_SIZE;
+//         m_shared_memory.setMemSize(memory_size);
+//     }
+//     SharedMemory getResult() override{
+//         return m_shared_memory;
+//     }
+//     private:
+//     SharedMemory m_shared_memory;
+// };
+/*  
 class ClientSharedMemoryBuilder : public SharedMemoryBuilder{
 public:
     ClientSharedMemoryBuilder(){
