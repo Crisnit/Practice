@@ -48,8 +48,7 @@ public:
 
     template <typename T>
     void setValue(T input_value) {
-        switch (m_type)
-        {
+        switch (m_type) {
         case float_type:
             m_value.fl = input_value;
             break;
@@ -80,17 +79,39 @@ public:
     ValueType m_value;
 };
 
+std::ostream& operator << (std::ostream &os, const Record &rec) {
+    switch (rec.m_type) {
+        case Record::Type::float_type:
+            return os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " " << "float" << " " << rec.m_value.fl;
+            break;
+        case Record::Type::double_type:
+            return os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " " << "double" << " " << rec.m_value.db;
+            break;
+        case Record::Type::int_type:
+            return os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " " << "integer" << " " << rec.m_value.i;
+            break;
+        case Record::Type::uint_type:
+            return os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " " << "unsigned_int" << " " << rec.m_value.ui;
+            break;
+        case Record::Type::char_ptr_type:
+            return os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " " << "char_ptr" << " " << rec.m_value.ch;
+            break;
+    }
+}
+
 struct SharedMemoryData {
     pthread_mutex_t m_lock;
-    uint32_t m_arr_count;
+    uint32_t m_arr_count = 0;
+    uint32_t m_arr_capacity;
     Record m_arr[0];
 };
 
 class SharedMemory {
 public:
-    SharedMemory(const std::string &t_name, int t_entity_num): m_name(t_name) {
+    SharedMemory(const std::string &t_name, int t_entity_num): m_name(t_name), m_arr_capacity(t_entity_num) {
         m_shm_fd = shm_open(m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
         if (m_shm_fd < 0) {
+            shm_unlink(m_name.data());
             throw std::runtime_error("Shared memory with this name already exists");
         }
 
@@ -99,7 +120,7 @@ public:
         ftruncate(m_shm_fd, m_memory_size);
 
         m_data_ptr = (SharedMemoryData*)mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
-        m_data_ptr->m_arr_count = t_entity_num;
+        m_data_ptr->m_arr_capacity = t_entity_num;
         m_mutex.init(m_data_ptr->m_lock);
 
         for (size_t i = 0; i < t_entity_num; i++) {
@@ -109,7 +130,7 @@ public:
     }
     
     void addRecord(const Record &t_record) {
-        if (m_arr_size > m_data_ptr->m_arr_count) {
+        if (m_arr_capacity > m_data_ptr->m_arr_count) {
             m_mutex.lock(m_data_ptr->m_lock);
 
             m_data_ptr->m_arr[m_data_ptr->m_arr_count] = t_record;
@@ -123,7 +144,7 @@ public:
         if (m_data_ptr->m_arr_count > 0) {
             m_mutex.lock(m_data_ptr->m_lock);
             for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
-                std::cout << &m_data_ptr->m_arr[i] << std::endl;
+                std::cout << m_data_ptr->m_arr[i] << std::endl;
             }
             m_mutex.unlock(m_data_ptr->m_lock);
         }
@@ -137,7 +158,7 @@ private:
     int m_shm_fd;
     SharedMemoryData* m_data_ptr;
     std::string m_name;
-    int m_arr_size;
+    int m_arr_capacity;
     int m_memory_size;
     int m_elem_size = sizeof(SharedMemoryData);
     SharedMemoryMutex m_mutex;
