@@ -148,6 +148,7 @@ public:
 
             m_mutex.unlock(m_data_ptr->m_lock);
         }
+        throw std::out_of_range("Array is full");
     }
 
     void getRecords() {

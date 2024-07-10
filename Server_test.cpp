@@ -2,7 +2,7 @@
 #include <thread>
 
 int main(){
-    std::string name = "Server record";
+    std::string name = "MEMORY";
     char value[] = {'A','B','O','B','A'};
     ServerSharedMemoryBuilder sharedMemoryBuilder = ServerSharedMemoryBuilder(name, 5);
     SharedMemoryDirector director;

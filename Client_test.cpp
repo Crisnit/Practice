@@ -2,7 +2,7 @@
 #include <thread>
 
 int main(){
-    std::string name = "Client record";
+    std::string name = "MEMORY";
     char value[] = {'A','B','O','B','A'};
     ClientSharedMemoryBuilder sharedMemoryBuilder = ClientSharedMemoryBuilder(name);
     SharedMemoryDirector director;
