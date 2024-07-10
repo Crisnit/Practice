@@ -42,7 +42,7 @@ public:
         double_type, 
         int_type, 
         uint_type, 
-        char_ptr_type
+        char_type
     };
 
     template <typename T> Record(uint32_t id, std::string &t_name, Type type, T input_value)
@@ -70,10 +70,32 @@ public:
         case uint_type:
             m_value.ui = input_value;
             break;
-        case char_ptr_type:
+        case char_type:       
             std::memcpy(m_value.ch, &input_value, 32);
+            m_value.ch[31] = '\0';
             break;
         }
+    }
+
+    template <typename T>
+    void changeValue(Type t_type, T input_value) {
+        m_type = t_type;
+        setValue(input_value);
+    }
+
+    std::string getDateTime() const {
+        int microseconds = m_timestamp%1000000;
+
+        char buff[128];
+
+        std::chrono::duration<uint64_t, std::micro> dur(m_timestamp);
+        auto tp = std::chrono::system_clock::time_point(
+        std::chrono::duration_cast<std::chrono::system_clock::duration>(dur));
+        std::time_t in_time_t = std::chrono::system_clock::to_time_t(tp);
+        strftime(buff, 128, "%Y-%m-%d %H:%M:%S", localtime(&in_time_t));
+        std::string resDate(buff);
+        resDate += "." + std::to_string(microseconds);
+        return resDate;
     }
 
     uint64_t getTimestamp() {
@@ -89,7 +111,7 @@ public:
 };
 
 std::ostream& operator << (std::ostream &os, const Record &rec) {
-    os << rec.m_id << " " << std::string(rec.m_name) << " " << rec.m_timestamp << " ";
+    os << rec.m_id << " " << std::string(rec.m_name) << " " << rec.getDateTime() << " ";
 
     switch (rec.m_type) {
         case Record::Type::float_type:
@@ -104,8 +126,8 @@ std::ostream& operator << (std::ostream &os, const Record &rec) {
         case Record::Type::uint_type:
             return os << "unsigned_int" << " " << rec.m_value.ui;
             break;
-        case Record::Type::char_ptr_type:
-            return os << "char_ptr" << " " << rec.m_value.ch;
+        case Record::Type::char_type:
+            return os << "char" << " " << std::string(rec.m_value.ch);
             break;
     }
     return os;
@@ -131,27 +153,6 @@ public:
 
     SharedMemory() {}
 
-    // SharedMemory(const std::string &t_name, int t_entity_num): m_name(t_name) {
-    //     m_shm_fd = shm_open(m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
-    //     if (m_shm_fd < 0) {
-    //         shm_unlink(m_name.data());
-    //         throw std::runtime_error("Shared memory with this name already exists");
-    //     }
-
-    //     m_memory_size = t_entity_num * sizeof(Record) + sizeof(SharedMemoryData);
-
-    //     ftruncate(m_shm_fd, m_memory_size);
-
-    //     m_data_ptr = (SharedMemoryData*)mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
-    //     m_data_ptr->m_arr_capacity = t_entity_num;
-    //     m_mutex.init(m_data_ptr->m_lock);
-
-    //     for (size_t i = 0; i < t_entity_num; i++) {
-    //         m_data_ptr->m_arr[i].clear();
-    //        std::cout << m_data_ptr->m_arr[i].m_id;
-    //     }
-    // }
-    
     void addRecord(const Record &t_record) {
         if (m_data_ptr->m_arr_capacity > m_data_ptr->m_arr_count) {
             m_mutex.lock(m_data_ptr->m_lock);
@@ -183,7 +184,24 @@ public:
             for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
                 if (m_data_ptr->m_arr[i].m_id == t_id)
                 {
-                    std::cout << m_data_ptr->m_arr[i];
+                    std::cout << m_data_ptr->m_arr[i] << std::endl;
+                    break;
+                }              
+            }
+
+            m_mutex.unlock(m_data_ptr->m_lock);
+        }
+    }
+    template <typename T>
+    void changeRecordValue(int t_id, Record::Type t_type, T t_value) {
+        if (m_data_ptr->m_arr_count > 0) {
+            m_mutex.lock(m_data_ptr->m_lock);
+
+            for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
+                if (m_data_ptr->m_arr[i].m_id == t_id)
+                {
+                    m_data_ptr->m_arr[i].changeValue(t_type, t_value);
+                    std::cout << m_data_ptr->m_arr[i]<< std::endl;
                     break;
                 }              
             }
@@ -271,17 +289,12 @@ public:
     
     SharedMemory getResult() override {
         m_shared_memory.m_shm_fd = shm_open(m_shared_memory.m_name.data(), O_RDWR, 0666);
-        // if (m_shared_memory.m_shm_fd == 0) {
-        //     shm_unlink(m_shared_memory.m_name.data());
-        //     throw std::runtime_error("Shared memory does not exist");
-        // }
+        if (m_shared_memory.m_shm_fd < 0) {
+             throw std::runtime_error("Shared memory does not exist");
+        }
 
-        struct stat buf;
-        fstat(m_shared_memory.m_shm_fd, &buf);
         m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, sizeof(SharedMemoryData), PROT_READ | PROT_WRITE, MAP_SHARED, m_shared_memory.m_shm_fd, 0);
 
-        //m_shared_memory.m_data_ptr->m_arr_capacity = (buf.st_size - sizeof(SharedMemoryData))/sizeof(Record);
-        //m_shared_memory.m_mutex.init(m_shared_memory.m_data_ptr->m_lock);
         return m_shared_memory;
     }
     private:
