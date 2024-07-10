@@ -80,21 +80,22 @@ public:
 };
 
 std::ostream& operator << (std::ostream &os, const Record &rec) {
+    os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " ";
     switch (rec.m_type) {
         case Record::Type::float_type:
-            return os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " " << "float" << " " << rec.m_value.fl;
+            return os << "float" << " " << rec.m_value.fl;
             break;
         case Record::Type::double_type:
-            return os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " " << "double" << " " << rec.m_value.db;
+            return os << "double" << " " << rec.m_value.db;
             break;
         case Record::Type::int_type:
-            return os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " " << "integer" << " " << rec.m_value.i;
+            return os << "integer" << " " << rec.m_value.i;
             break;
         case Record::Type::uint_type:
-            return os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " " << "unsigned_int" << " " << rec.m_value.ui;
+            return os << "unsigned_int" << " " << rec.m_value.ui;
             break;
         case Record::Type::char_ptr_type:
-            return os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " " << "char_ptr" << " " << rec.m_value.ch;
+            return os << "char_ptr" << " " << rec.m_value.ch;
             break;
     }
 }
@@ -116,28 +117,28 @@ public:
         m_memory_size = t_memory_size;
     }
 
-    SharedMemory();
+    SharedMemory() {}
 
-    SharedMemory(const std::string &t_name, int t_entity_num): m_name(t_name) {
-        m_shm_fd = shm_open(m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
-        if (m_shm_fd < 0) {
-            shm_unlink(m_name.data());
-            throw std::runtime_error("Shared memory with this name already exists");
-        }
+    // SharedMemory(const std::string &t_name, int t_entity_num): m_name(t_name) {
+    //     m_shm_fd = shm_open(m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
+    //     if (m_shm_fd < 0) {
+    //         shm_unlink(m_name.data());
+    //         throw std::runtime_error("Shared memory with this name already exists");
+    //     }
 
-        m_memory_size = t_entity_num * sizeof(Record) + sizeof(SharedMemoryData);
+    //     m_memory_size = t_entity_num * sizeof(Record) + sizeof(SharedMemoryData);
 
-        ftruncate(m_shm_fd, m_memory_size);
+    //     ftruncate(m_shm_fd, m_memory_size);
 
-        m_data_ptr = (SharedMemoryData*)mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
-        m_data_ptr->m_arr_capacity = t_entity_num;
-        m_mutex.init(m_data_ptr->m_lock);
+    //     m_data_ptr = (SharedMemoryData*)mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
+    //     m_data_ptr->m_arr_capacity = t_entity_num;
+    //     m_mutex.init(m_data_ptr->m_lock);
 
-        for (size_t i = 0; i < t_entity_num; i++) {
-            m_data_ptr->m_arr[i].clear();
-           std::cout << m_data_ptr->m_arr[i].m_id;
-        }
-    }
+    //     for (size_t i = 0; i < t_entity_num; i++) {
+    //         m_data_ptr->m_arr[i].clear();
+    //        std::cout << m_data_ptr->m_arr[i].m_id;
+    //     }
+    // }
     
     void addRecord(const Record &t_record) {
         if (m_data_ptr->m_arr_capacity > m_data_ptr->m_arr_count) {
@@ -160,12 +161,26 @@ public:
         }
     }
 
+    void getRecordById(int t_id) {
+        if (m_data_ptr->m_arr_count > 0) {
+            m_mutex.lock(m_data_ptr->m_lock);
+            for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
+                if (m_data_ptr->m_arr[i].m_id == t_id)
+                {
+                    std::cout << m_data_ptr->m_arr[i];
+                    break;
+                }              
+            }
+            m_mutex.unlock(m_data_ptr->m_lock);
+        }
+    }
+
     void getStats() {
         m_mutex.lock(m_data_ptr->m_lock);
         std::cout << "Array capacity: " << m_data_ptr->m_arr_capacity << " " << "Array count: " << m_data_ptr->m_arr_count << std::endl;
     }
 
-    ~SharedMemory() {
+    void deleteSharedMemory() {
         shm_unlink(m_name.data());
     }
 
@@ -176,36 +191,6 @@ public:
     int m_elem_size = sizeof(SharedMemoryData);
     SharedMemoryMutex m_mutex;
 };
-
-/*class SharedMemoryClient{
-public:
-    SharedMemoryClient(char& name){
-        std::memcpy(m_name, &name, 16);
-
-        m_shm_fd = shm_open(m_name, O_CREAT | O_RDWR, 0666);
-
-        struct stat buf;
-        fstat(m_shm_fd, &buf);
-        m_memory_size = buf.st_size;
-
-        m_arr_size = m_memory_size / m_elem_size;
-
-        m_arr_ptr = (Record*) mmap(0, m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shm_fd, 0);
-    }
-    
-    ~SharedMemoryClient(){
-        munmap(m_arr_ptr, m_memory_size);
-        close(m_shm_fd);
-    }
-
-private:
-    int m_shm_fd;
-    Record* m_arr_ptr;
-    char m_name[16];
-    int m_arr_size;
-    int m_memory_size;
-    int m_elem_size = sizeof(Record);
-};*/
 
 class SharedMemoryBuilder {
 public:
@@ -251,29 +236,39 @@ public:
     std::string m_name;
     int m_entity_num;
 };
-/*  
+
 class ClientSharedMemoryBuilder : public SharedMemoryBuilder{
 public:
-    ClientSharedMemoryBuilder(){
+    ClientSharedMemoryBuilder(const std::string &t_name): m_name(t_name) {
         m_shared_memory = SharedMemory();
     }
-    void buildName(char &name) override{
-        m_shared_memory.setName(name);
+
+    void buildName() override {
+        m_shared_memory.setName(m_name);
     }
-    void buildArrCapacity(int array_size) override{
-        m_shared_memory.setArrSize(array_size);
-    }
-    void buildMemSize(int array_size) override{
-        int memory_size = array_size * RECORD_SIZE;
-        m_shared_memory.setMemSize(memory_size);
-    }
-    SharedMemory getResult() override{
+
+    void buildMemSize() override {
+        
+     }
+    
+    SharedMemory getResult() override {
+        m_shared_memory.m_shm_fd = shm_open(m_shared_memory.m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
+        if (m_shared_memory.m_shm_fd == 0) {
+            shm_unlink(m_shared_memory.m_name.data());
+            throw std::runtime_error("Shared memory does not exist");
+        }
+        struct stat buf;
+        fstat(m_shared_memory.m_shm_fd, &buf);
+        m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, sizeof(SharedMemoryData), PROT_READ | PROT_WRITE, MAP_SHARED, m_shared_memory.m_shm_fd, 0);
+        //m_shared_memory.m_data_ptr->m_arr_capacity = m_entity_num;
+        //m_shared_memory.m_mutex.init(m_shared_memory.m_data_ptr->m_lock);
         return m_shared_memory;
     }
     private:
     SharedMemory m_shared_memory;
+    std::string m_name;
 };
-*/
+
 class SharedMemoryDirector {
 public:
     void buildSharedMemory(SharedMemoryBuilder &sharedMemoryBuilder) {
