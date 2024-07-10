@@ -34,7 +34,7 @@ union ValueType {
     char ch[32];
 };
 
-struct Record{
+struct Record {
 public:
     enum Type {float_type, double_type, int_type, uint_type, char_ptr_type};
     template <typename T> Record(uint32_t id, std::string &t_name, Type type, T input_value): m_id(id), m_type(type), m_name(t_name) {
@@ -42,9 +42,7 @@ public:
         m_timestamp = getTimestamp();
     };
 
-    void clear() {
-
-    }
+    void clear() { }
 
     template <typename T>
     void setValue(T input_value) {
@@ -81,6 +79,7 @@ public:
 
 std::ostream& operator << (std::ostream &os, const Record &rec) {
     os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " ";
+
     switch (rec.m_type) {
         case Record::Type::float_type:
             return os << "float" << " " << rec.m_value.fl;
@@ -164,6 +163,7 @@ public:
     void getRecordById(int t_id) {
         if (m_data_ptr->m_arr_count > 0) {
             m_mutex.lock(m_data_ptr->m_lock);
+
             for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
                 if (m_data_ptr->m_arr[i].m_id == t_id)
                 {
@@ -171,13 +171,16 @@ public:
                     break;
                 }              
             }
+
             m_mutex.unlock(m_data_ptr->m_lock);
         }
     }
 
     void getStats() {
         m_mutex.lock(m_data_ptr->m_lock);
+
         std::cout << "Array capacity: " << m_data_ptr->m_arr_capacity << " " << "Array count: " << m_data_ptr->m_arr_count << std::endl;
+        
         m_mutex.unlock(m_data_ptr->m_lock);
     }
 
