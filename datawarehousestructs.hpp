@@ -17,27 +17,38 @@ public:
         pthread_mutexattr_init(&attr);
         pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
         pthread_mutex_init(&t_lock, &attr);
-    };
+    }
     void lock(pthread_mutex_t &t_lock) {
         pthread_mutex_lock(&t_lock);
-    };
+    }
     void unlock(pthread_mutex_t &t_lock) {
         pthread_mutex_unlock(&t_lock);
-    };
+    }
 };
 
-union ValueType {
-    float fl;
-    double db;
-    int32_t i;
-    uint64_t ui;
-    char ch[32];
-};
 
 struct Record {
 public:
-    enum Type {float_type, double_type, int_type, uint_type, char_ptr_type};
-    template <typename T> Record(uint32_t id, std::string &t_name, Type type, T input_value): m_id(id), m_type(type), m_name(t_name) {
+    union ValueType {
+        float fl;
+        double db;
+        int32_t i;
+        uint64_t ui;
+        char ch[32];
+    };
+
+    enum Type {
+        float_type, 
+        double_type, 
+        int_type, 
+        uint_type, 
+        char_ptr_type
+    };
+
+    template <typename T> Record(uint32_t id, std::string &t_name, Type type, T input_value)
+        : m_id(id), m_type(type) {
+        std::strncpy(m_name, t_name.c_str(), 32);
+        m_name [31] = '\0';
         setValue(input_value);
         m_timestamp = getTimestamp();
     };
@@ -71,14 +82,14 @@ public:
     }
 
     uint32_t m_id;
-    std::string m_name;
+    char m_name[32];
     uint64_t m_timestamp;
     Type m_type;
     ValueType m_value;
 };
 
 std::ostream& operator << (std::ostream &os, const Record &rec) {
-    os << rec.m_id << " " << rec.m_name << " " << rec.m_timestamp << " ";
+    os << rec.m_id << " " << std::string(rec.m_name) << " " << rec.m_timestamp << " ";
 
     switch (rec.m_type) {
         case Record::Type::float_type:
@@ -97,9 +108,11 @@ std::ostream& operator << (std::ostream &os, const Record &rec) {
             return os << "char_ptr" << " " << rec.m_value.ch;
             break;
     }
+    return os;
 }
 
-struct SharedMemoryData {
+struct SharedMemoryData 
+{
     pthread_mutex_t m_lock;
     uint32_t m_arr_count = 0;
     uint32_t m_arr_capacity;
@@ -254,20 +267,20 @@ public:
         m_shared_memory.setName(m_name);
     }
 
-    void buildMemSize() override {
-        
-     }
+    void buildMemSize() override { }
     
     SharedMemory getResult() override {
-        m_shared_memory.m_shm_fd = shm_open(m_shared_memory.m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
-        if (m_shared_memory.m_shm_fd == 0) {
-            shm_unlink(m_shared_memory.m_name.data());
-            throw std::runtime_error("Shared memory does not exist");
-        }
+        m_shared_memory.m_shm_fd = shm_open(m_shared_memory.m_name.data(), O_RDWR, 0666);
+        // if (m_shared_memory.m_shm_fd == 0) {
+        //     shm_unlink(m_shared_memory.m_name.data());
+        //     throw std::runtime_error("Shared memory does not exist");
+        // }
+
         struct stat buf;
         fstat(m_shared_memory.m_shm_fd, &buf);
         m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, sizeof(SharedMemoryData), PROT_READ | PROT_WRITE, MAP_SHARED, m_shared_memory.m_shm_fd, 0);
-        //m_shared_memory.m_data_ptr->m_arr_capacity = m_entity_num;
+
+        //m_shared_memory.m_data_ptr->m_arr_capacity = (buf.st_size - sizeof(SharedMemoryData))/sizeof(Record);
         //m_shared_memory.m_mutex.init(m_shared_memory.m_data_ptr->m_lock);
         return m_shared_memory;
     }

@@ -4,7 +4,7 @@
 int main(){
     std::string name = "MEMORY";
     char value[] = {'A','B','O','B','A'};
-    ServerSharedMemoryBuilder sharedMemoryBuilder = ServerSharedMemoryBuilder(name, 5);
+    ServerSharedMemoryBuilder sharedMemoryBuilder(name, 5);
     SharedMemoryDirector director;
     director.buildSharedMemory(sharedMemoryBuilder);
     SharedMemory shm = sharedMemoryBuilder.getResult();

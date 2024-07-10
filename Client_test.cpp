@@ -4,7 +4,7 @@
 int main(){
     std::string name = "MEMORY";
     char value[] = {'A','B','O','B','A'};
-    ClientSharedMemoryBuilder sharedMemoryBuilder = ClientSharedMemoryBuilder(name);
+    ClientSharedMemoryBuilder sharedMemoryBuilder(name);
     SharedMemoryDirector director;
     director.buildSharedMemory(sharedMemoryBuilder);
     SharedMemory shm = sharedMemoryBuilder.getResult();
