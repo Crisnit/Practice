@@ -178,6 +178,7 @@ public:
     void getStats() {
         m_mutex.lock(m_data_ptr->m_lock);
         std::cout << "Array capacity: " << m_data_ptr->m_arr_capacity << " " << "Array count: " << m_data_ptr->m_arr_count << std::endl;
+        m_mutex.unlock(m_data_ptr->m_lock);
     }
 
     void deleteSharedMemory() {
