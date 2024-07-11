@@ -219,10 +219,11 @@ public:
                 {
                     m_data_ptr->m_arr[i].changeValue(t_type, t_value);
                     std::cout << m_data_ptr->m_arr[i]<< std::endl;
-                    break;
+                    m_mutex.unlock(m_data_ptr->m_lock);
+                    return;
                 }              
             }
-
+            std::cout << "No record found" << std::endl;
             m_mutex.unlock(m_data_ptr->m_lock);
         }
     }
