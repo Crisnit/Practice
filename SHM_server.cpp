@@ -57,8 +57,8 @@ int main(int argc, char *argv[]) {
                 break;
             case 4:
                 {
-                    char value[] = "VALUE";
-                    shm.addRecord(Record(i, rec_name, Record::char_type, *value));
+                    std::string value = "VALUE";
+                    shm.addRecord(Record(i, rec_name, Record::string_type, value));
                 }          
                 break;
             default:

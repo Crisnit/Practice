@@ -42,21 +42,29 @@ public:
         double_type, 
         int_type, 
         uint_type, 
-        char_type
+        string_type
     };
 
-    template <typename T> Record(uint32_t id, std::string &t_name, Type type, T input_value)
+    template <typename T> Record(uint32_t id, std::string &t_name, Type type, T &input_value)
         : m_id(id), m_type(type) {
         std::strncpy(m_name, t_name.c_str(), 32);
         m_name [31] = '\0';
-        setValue(input_value);
+        setDecimalValue(input_value);
+        m_timestamp = getTimestamp();
+    };
+
+    Record(uint32_t id, std::string &t_name, Type type, std::string &input_value)
+        : m_id(id), m_type(type) {
+        std::strncpy(m_name, t_name.c_str(), 32);
+        m_name [31] = '\0';
+        setStrValue(input_value);
         m_timestamp = getTimestamp();
     };
 
     void clear() { }
 
     template <typename T>
-    void setValue(T input_value) {
+    void setDecimalValue(T &input_value) {
         switch (m_type) {
         case float_type:
             m_value.fl = input_value;
@@ -70,17 +78,24 @@ public:
         case uint_type:
             m_value.ui = input_value;
             break;
-        case char_type:       
-            std::memcpy(m_value.ch, &input_value, 32);
-            m_value.ch[31] = '\0';
-            break;
         }
     }
 
+    void setStrValue(std::string &t_value) {
+        std::strncpy(m_value.ch, t_value.c_str(), 32);
+        m_value.ch[31] = '\0';
+    }
+
     template <typename T>
-    void changeValue(Type t_type, T input_value) {
+    void changeValue(Type t_type, T &input_value) {
         m_type = t_type;
-        setValue(input_value);
+        setDecimalValue(input_value);
+        m_timestamp = getTimestamp();
+    }
+
+    void changeValue(Type t_type, std::string &input_value) {
+        m_type = t_type;
+        setStrValue(input_value);
         m_timestamp = getTimestamp();
     }
 
@@ -127,8 +142,8 @@ std::ostream& operator << (std::ostream &os, const Record &rec) {
         case Record::Type::uint_type:
             return os << "unsigned_int" << " " << rec.m_value.ui;
             break;
-        case Record::Type::char_type:
-            return os << "char" << " " << std::string(rec.m_value.ch);
+        case Record::Type::string_type:
+            return os << "string" << " " << std::string(rec.m_value.ch);
             break;
     }
     return os;
