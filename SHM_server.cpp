@@ -1,6 +1,7 @@
 #include "datawarehousestructs.hpp"
 
 int main(int argc, char *argv[]) {
+    using namespace std::chrono_literals;
     if (argc < 3)
     {
         std::cout << "Wrong number of arguments" << std::endl;

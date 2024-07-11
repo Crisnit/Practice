@@ -12,11 +12,16 @@
 class SharedMemoryMutex {
 public:
     SharedMemoryMutex() {
-        pthread_mutexattr_t attr;
+        pthread_mutexattr_t psharedm;
+        pthread_condattr_t psharedc;
 
-        pthread_mutexattr_init(&attr);
-        pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
-        pthread_mutex_init(&m_lock, &attr);
+        pthread_mutexattr_init(&psharedm);
+        pthread_mutexattr_setpshared(&psharedm, PTHREAD_PROCESS_SHARED);
+
+        pthread_condattr_init(&psharedc);
+        pthread_condattr_setpshared(&psharedc, PTHREAD_PROCESS_SHARED);
+        pthread_mutex_init(&m_lock, &psharedm);
+        pthread_cond_init(&nonzero,&psharedc);
     }
     void lock() {
         pthread_mutex_lock(&m_lock);
@@ -25,6 +30,7 @@ public:
         pthread_mutex_unlock(&m_lock);
     }
     pthread_mutex_t m_lock;
+    pthread_cond_t nonzero;
 };
 
 
@@ -171,10 +177,9 @@ public:
     SharedMemory() {}
 
     void addRecord(const Record &t_record) {
+        m_data_ptr->m_mutex.lock();
         if (m_data_ptr->m_arr_capacity > m_data_ptr->m_arr_count) 
         {
-            m_data_ptr->m_mutex.lock();
-
             m_data_ptr->m_arr[m_data_ptr->m_arr_count] = t_record;
             m_data_ptr->m_arr_count++;
 
@@ -182,26 +187,27 @@ public:
         }
         else 
         {
+            m_data_ptr->m_mutex.unlock();
             throw std::out_of_range("Array is full");
         }
     }
 
     void getRecords() {
+        m_data_ptr->m_mutex.lock();
         if (m_data_ptr->m_arr_count > 0) 
         {
-            m_data_ptr->m_mutex.lock();
             for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) 
             {
                 std::cout << m_data_ptr->m_arr[i] << std::endl;
             }
-            m_data_ptr->m_mutex.unlock();
         }
+        m_data_ptr->m_mutex.unlock();
     }
 
     void getRecordById(int t_id) {
+        m_data_ptr->m_mutex.lock();
         if (m_data_ptr->m_arr_count > 0) 
         {
-            m_data_ptr->m_mutex.lock();
 
             for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) 
             {
@@ -213,14 +219,14 @@ public:
                 }              
             }
             std::cout << "No record found" << std::endl;
-            m_data_ptr->m_mutex.unlock();
         }
+        m_data_ptr->m_mutex.unlock();
     }
     template <typename T>
     void changeRecordValue(int t_id, Record::Type t_type, T t_value) {
+        m_data_ptr->m_mutex.lock();
         if (m_data_ptr->m_arr_count > 0) 
         {
-            m_data_ptr->m_mutex.lock();
 
             for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) 
             {
@@ -233,8 +239,8 @@ public:
                 }              
             }
             std::cout << "No record found" << std::endl;
-            m_data_ptr->m_mutex.unlock();
         }
+        m_data_ptr->m_mutex.unlock();
     }
 
     void getStats() {
