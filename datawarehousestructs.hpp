@@ -11,19 +11,20 @@
 
 class SharedMemoryMutex {
 public:
-    void init(pthread_mutex_t &t_lock) {
+    SharedMemoryMutex() {
         pthread_mutexattr_t attr;
 
         pthread_mutexattr_init(&attr);
         pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
-        pthread_mutex_init(&t_lock, &attr);
+        pthread_mutex_init(&m_lock, &attr);
     }
-    void lock(pthread_mutex_t &t_lock) {
-        pthread_mutex_lock(&t_lock);
+    void lock() {
+        pthread_mutex_lock(&m_lock);
     }
-    void unlock(pthread_mutex_t &t_lock) {
-        pthread_mutex_unlock(&t_lock);
+    void unlock() {
+        pthread_mutex_unlock(&m_lock);
     }
+    pthread_mutex_t m_lock;
 };
 
 
@@ -151,7 +152,7 @@ std::ostream& operator << (std::ostream &os, const Record &rec) {
 
 struct SharedMemoryData 
 {
-    pthread_mutex_t m_lock;
+    SharedMemoryMutex m_mutex;
     uint32_t m_arr_count = 0;
     uint32_t m_arr_capacity;
     Record m_arr[0];
@@ -171,12 +172,12 @@ public:
 
     void addRecord(const Record &t_record) {
         if (m_data_ptr->m_arr_capacity > m_data_ptr->m_arr_count) {
-            m_mutex.lock(m_data_ptr->m_lock);
+            m_data_ptr->m_mutex.lock();
 
             m_data_ptr->m_arr[m_data_ptr->m_arr_count] = t_record;
             m_data_ptr->m_arr_count++;
 
-            m_mutex.unlock(m_data_ptr->m_lock);
+            m_data_ptr->m_mutex.unlock();
         }
         else {
             throw std::out_of_range("Array is full");
@@ -185,55 +186,55 @@ public:
 
     void getRecords() {
         if (m_data_ptr->m_arr_count > 0) {
-            m_mutex.lock(m_data_ptr->m_lock);
+            m_data_ptr->m_mutex.lock();
             for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
                 std::cout << m_data_ptr->m_arr[i] << std::endl;
             }
-            m_mutex.unlock(m_data_ptr->m_lock);
+            m_data_ptr->m_mutex.unlock();
         }
     }
 
     void getRecordById(int t_id) {
         if (m_data_ptr->m_arr_count > 0) {
-            m_mutex.lock(m_data_ptr->m_lock);
+            m_data_ptr->m_mutex.lock();
 
             for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
                 if (m_data_ptr->m_arr[i].m_id == t_id)
                 {
                     std::cout << m_data_ptr->m_arr[i] << std::endl;
-                    m_mutex.unlock(m_data_ptr->m_lock);
+                    m_data_ptr->m_mutex.unlock();
                     return;
                 }              
             }
             std::cout << "No record found" << std::endl;
-            m_mutex.unlock(m_data_ptr->m_lock);
+            m_data_ptr->m_mutex.unlock();
         }
     }
     template <typename T>
     void changeRecordValue(int t_id, Record::Type t_type, T t_value) {
         if (m_data_ptr->m_arr_count > 0) {
-            m_mutex.lock(m_data_ptr->m_lock);
+            m_data_ptr->m_mutex.lock();
 
             for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
                 if (m_data_ptr->m_arr[i].m_id == t_id)
                 {
                     m_data_ptr->m_arr[i].changeValue(t_type, t_value);
                     std::cout << m_data_ptr->m_arr[i]<< std::endl;
-                    m_mutex.unlock(m_data_ptr->m_lock);
+                    m_data_ptr->m_mutex.unlock();
                     return;
                 }              
             }
             std::cout << "No record found" << std::endl;
-            m_mutex.unlock(m_data_ptr->m_lock);
+            m_data_ptr->m_mutex.unlock();
         }
     }
 
     void getStats() {
-        m_mutex.lock(m_data_ptr->m_lock);
+        m_data_ptr->m_mutex.lock();
 
         std::cout << "Array capacity: " << m_data_ptr->m_arr_capacity << " " << "Array count: " << m_data_ptr->m_arr_count << std::endl;
         
-        m_mutex.unlock(m_data_ptr->m_lock);
+        m_data_ptr->m_mutex.unlock();
     }
 
     void deleteSharedMemory() {
@@ -245,7 +246,6 @@ public:
     std::string m_name;
     int m_memory_size;
     int m_elem_size = sizeof(SharedMemoryData);
-    SharedMemoryMutex m_mutex;
 };
 
 class SharedMemoryBuilder {
@@ -279,7 +279,7 @@ public:
 
         m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, m_shared_memory.m_memory_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shared_memory.m_shm_fd, 0);
         m_shared_memory.m_data_ptr->m_arr_capacity = m_entity_num;
-        m_shared_memory.m_mutex.init(m_shared_memory.m_data_ptr->m_lock);
+        m_shared_memory.m_data_ptr->m_mutex = SharedMemoryMutex();
 
         for (size_t i = 0; i < m_entity_num; i++) {
             m_shared_memory.m_data_ptr->m_arr[i].clear();
