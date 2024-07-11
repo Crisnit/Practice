@@ -81,6 +81,7 @@ public:
     void changeValue(Type t_type, T input_value) {
         m_type = t_type;
         setValue(input_value);
+        m_timestamp = getTimestamp();
     }
 
     std::string getDateTime() const {
@@ -185,10 +186,11 @@ public:
                 if (m_data_ptr->m_arr[i].m_id == t_id)
                 {
                     std::cout << m_data_ptr->m_arr[i] << std::endl;
-                    break;
+                    m_mutex.unlock(m_data_ptr->m_lock);
+                    return;
                 }              
             }
-
+            std::cout << "No record found" << std::endl;
             m_mutex.unlock(m_data_ptr->m_lock);
         }
     }
@@ -265,7 +267,6 @@ public:
 
         for (size_t i = 0; i < m_entity_num; i++) {
             m_shared_memory.m_data_ptr->m_arr[i].clear();
-           std::cout << m_shared_memory.m_data_ptr->m_arr[i].m_id;
         }
         return m_shared_memory;
     }
