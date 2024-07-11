@@ -130,28 +130,28 @@ public:
 std::ostream& operator << (std::ostream &os, const Record &rec) {
     os << rec.m_id << " " << std::string(rec.m_name) << " " << rec.getDateTime() << " ";
 
-    switch (rec.m_type) {
-        case Record::Type::float_type:
-            return os << "float" << " " << rec.m_value.fl;
-            break;
-        case Record::Type::double_type:
-            return os << "double" << " " << rec.m_value.db;
-            break;
-        case Record::Type::int_type:
-            return os << "integer" << " " << rec.m_value.i;
-            break;
-        case Record::Type::uint_type:
-            return os << "unsigned_int" << " " << rec.m_value.ui;
-            break;
-        case Record::Type::string_type:
-            return os << "string" << " " << std::string(rec.m_value.ch);
-            break;
+    switch (rec.m_type) 
+    {
+    case Record::Type::float_type:
+        return os << "float" << " " << rec.m_value.fl;
+        break;
+    case Record::Type::double_type:
+        return os << "double" << " " << rec.m_value.db;
+        break;
+    case Record::Type::int_type:
+        return os << "integer" << " " << rec.m_value.i;
+        break;
+    case Record::Type::uint_type:
+        return os << "unsigned_int" << " " << rec.m_value.ui;
+        break;
+    case Record::Type::string_type:
+        return os << "string" << " " << std::string(rec.m_value.ch);
+        break;
     }
     return os;
 }
 
-struct SharedMemoryData 
-{
+struct SharedMemoryData {
     SharedMemoryMutex m_mutex;
     uint32_t m_arr_count = 0;
     uint32_t m_arr_capacity;
@@ -171,7 +171,8 @@ public:
     SharedMemory() {}
 
     void addRecord(const Record &t_record) {
-        if (m_data_ptr->m_arr_capacity > m_data_ptr->m_arr_count) {
+        if (m_data_ptr->m_arr_capacity > m_data_ptr->m_arr_count) 
+        {
             m_data_ptr->m_mutex.lock();
 
             m_data_ptr->m_arr[m_data_ptr->m_arr_count] = t_record;
@@ -179,15 +180,18 @@ public:
 
             m_data_ptr->m_mutex.unlock();
         }
-        else {
+        else 
+        {
             throw std::out_of_range("Array is full");
         }
     }
 
     void getRecords() {
-        if (m_data_ptr->m_arr_count > 0) {
+        if (m_data_ptr->m_arr_count > 0) 
+        {
             m_data_ptr->m_mutex.lock();
-            for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
+            for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) 
+            {
                 std::cout << m_data_ptr->m_arr[i] << std::endl;
             }
             m_data_ptr->m_mutex.unlock();
@@ -195,10 +199,12 @@ public:
     }
 
     void getRecordById(int t_id) {
-        if (m_data_ptr->m_arr_count > 0) {
+        if (m_data_ptr->m_arr_count > 0) 
+        {
             m_data_ptr->m_mutex.lock();
 
-            for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
+            for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) 
+            {
                 if (m_data_ptr->m_arr[i].m_id == t_id)
                 {
                     std::cout << m_data_ptr->m_arr[i] << std::endl;
@@ -212,10 +218,12 @@ public:
     }
     template <typename T>
     void changeRecordValue(int t_id, Record::Type t_type, T t_value) {
-        if (m_data_ptr->m_arr_count > 0) {
+        if (m_data_ptr->m_arr_count > 0) 
+        {
             m_data_ptr->m_mutex.lock();
 
-            for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) {
+            for (size_t i = 0; i < m_data_ptr->m_arr_count; i++) 
+            {
                 if (m_data_ptr->m_arr[i].m_id == t_id)
                 {
                     m_data_ptr->m_arr[i].changeValue(t_type, t_value);
@@ -270,7 +278,8 @@ public:
     }
     SharedMemory getResult() override {
         m_shared_memory.m_shm_fd = shm_open(m_shared_memory.m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
-        if (m_shared_memory.m_shm_fd < 0) {
+        if (m_shared_memory.m_shm_fd < 0) 
+        {
             shm_unlink(m_shared_memory.m_name.data());
             throw std::runtime_error("Shared memory with this name already exists");
         }
@@ -281,7 +290,8 @@ public:
         m_shared_memory.m_data_ptr->m_arr_capacity = m_entity_num;
         m_shared_memory.m_data_ptr->m_mutex = SharedMemoryMutex();
 
-        for (size_t i = 0; i < m_entity_num; i++) {
+        for (size_t i = 0; i < m_entity_num; i++) 
+        {
             m_shared_memory.m_data_ptr->m_arr[i].clear();
         }
         return m_shared_memory;
@@ -292,7 +302,7 @@ public:
     int m_entity_num;
 };
 
-class ClientSharedMemoryBuilder : public SharedMemoryBuilder{
+class ClientSharedMemoryBuilder : public SharedMemoryBuilder {
 public:
     ClientSharedMemoryBuilder(const std::string &t_name): m_name(t_name) {
         m_shared_memory = SharedMemory();
@@ -306,7 +316,8 @@ public:
     
     SharedMemory getResult() override {
         m_shared_memory.m_shm_fd = shm_open(m_shared_memory.m_name.data(), O_RDWR, 0666);
-        if (m_shared_memory.m_shm_fd < 0) {
+        if (m_shared_memory.m_shm_fd < 0) 
+        {
              throw std::runtime_error("Shared memory does not exist");
         }
 

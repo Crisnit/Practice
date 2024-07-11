@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
                     double value = std::rand();
                     value /= 100;
                     shm.addRecord(Record(i, rec_name, Record::double_type, value));
-                    }
+                }
                 break;
             case 3:
                 {
@@ -59,8 +59,6 @@ int main(int argc, char *argv[]) {
                     std::string value = "VALUE";
                     shm.addRecord(Record(i, rec_name, Record::string_type, value));
                 }          
-                break;
-            default:
                 break;
             }
         }
