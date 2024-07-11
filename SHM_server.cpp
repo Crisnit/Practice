@@ -1,5 +1,4 @@
 #include "datawarehousestructs.hpp"
-#include <thread>
 
 int main(int argc, char *argv[]) {
     if (argc < 3)
