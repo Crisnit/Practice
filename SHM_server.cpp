@@ -1,4 +1,5 @@
 #include "datawarehousestructs.hpp"
+#include <thread>
 
 int main(int argc, char *argv[]) {
     using namespace std::chrono_literals;
@@ -28,6 +29,7 @@ int main(int argc, char *argv[]) {
 
         for (size_t i = 0; i < arr_capacity; i++)
         {
+            std::this_thread::sleep_for(200ms);
             std::string rec_name = "Record" + std::to_string(i+1);
             switch (i%5)
             {

@@ -279,9 +279,8 @@ public:
     }
 
     void buildMemSize() override {
-        //int memory_size = m_entity_num * sizeof(Record) + sizeof(SharedMemoryData);
-        //m_shared_memory.setMemSize(memory_size);
-        m_shared_memory.setMemSize(1*1024*1024);
+        int memory_size = m_entity_num * sizeof(Record) + sizeof(SharedMemoryData);
+        m_shared_memory.setMemSize(memory_size);
     }
     SharedMemory getResult() override {
         m_shared_memory.m_shm_fd = shm_open(m_shared_memory.m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
@@ -326,14 +325,21 @@ public:
         {
              throw std::runtime_error("Shared memory does not exist");
         }
-        const uint32_t shm_size = 1*1024*1024;
-        m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shared_memory.m_shm_fd, 0);
+        m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, sizeof(SharedMemoryData), PROT_READ | PROT_WRITE, 
+        MAP_SHARED, m_shared_memory.m_shm_fd, 0);
+        
+        m_entity_num = m_shared_memory.m_data_ptr->m_arr_capacity;
+
+        munmap(m_shared_memory.m_data_ptr,sizeof(SharedMemoryData));
+        m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, m_entity_num *sizeof(Record) + sizeof(SharedMemoryData), 
+        PROT_READ | PROT_WRITE, MAP_SHARED, m_shared_memory.m_shm_fd, 0);
 
         return m_shared_memory;
     }
     private:
     SharedMemory m_shared_memory;
     std::string m_name;
+    int m_entity_num;
 };
 
 class SharedMemoryDirector {
