@@ -272,18 +272,20 @@ public:
 class ServerSharedMemoryBuilder : public SharedMemoryBuilder {
 public:
     ServerSharedMemoryBuilder(const std::string &t_name, int t_entity_num): m_name(t_name), m_entity_num(t_entity_num) {
-        m_shared_memory = SharedMemory();
+        // m_shared_memory = SharedMemory();
     }
     void buildName() override {
         m_shared_memory.setName(m_name);
     }
 
     void buildMemSize() override {
-        int memory_size = m_entity_num * sizeof(Record) + sizeof(SharedMemoryData);
-        m_shared_memory.setMemSize(memory_size);
+        //int memory_size = m_entity_num * sizeof(Record) + sizeof(SharedMemoryData);
+        //m_shared_memory.setMemSize(memory_size);
+        m_shared_memory.setMemSize(1*1024*1024);
     }
     SharedMemory getResult() override {
         m_shared_memory.m_shm_fd = shm_open(m_shared_memory.m_name.data(), O_CREAT | O_EXCL | O_RDWR, 0666);
+
         if (m_shared_memory.m_shm_fd < 0) 
         {
             shm_unlink(m_shared_memory.m_name.data());
@@ -310,9 +312,7 @@ public:
 
 class ClientSharedMemoryBuilder : public SharedMemoryBuilder {
 public:
-    ClientSharedMemoryBuilder(const std::string &t_name): m_name(t_name) {
-        m_shared_memory = SharedMemory();
-    }
+    ClientSharedMemoryBuilder(const std::string &t_name): m_name(t_name) {}
 
     void buildName() override {
         m_shared_memory.setName(m_name);
@@ -326,8 +326,8 @@ public:
         {
              throw std::runtime_error("Shared memory does not exist");
         }
-
-        m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, sizeof(SharedMemoryData), PROT_READ | PROT_WRITE, MAP_SHARED, m_shared_memory.m_shm_fd, 0);
+        const uint32_t shm_size = 1*1024*1024;
+        m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_shared_memory.m_shm_fd, 0);
 
         return m_shared_memory;
     }

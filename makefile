@@ -1,4 +1,4 @@
-all: SHM_server SHM_client clean
+all: SHM_server SHM_client
 
 SHM_server: datawarehousestructs.o SHM_server.o
 	g++ datawarehousestructs.hpp SHM_server.o -o bin/shm_server

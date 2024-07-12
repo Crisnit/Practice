@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
         ServerSharedMemoryBuilder sharedMemoryBuilder(shm_name, arr_capacity);
         SharedMemoryDirector director;
         director.buildSharedMemory(sharedMemoryBuilder);
+        
         try
         {
             shm = sharedMemoryBuilder.getResult();
@@ -24,6 +25,7 @@ int main(int argc, char *argv[]) {
             std::cerr << e.what() << '\n';
             return 0;
         }
+
         for (size_t i = 0; i < arr_capacity; i++)
         {
             std::string rec_name = "Record" + std::to_string(i+1);
