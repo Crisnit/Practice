@@ -331,6 +331,7 @@ public:
         m_entity_num = m_shared_memory.m_data_ptr->m_arr_capacity;
 
         munmap(m_shared_memory.m_data_ptr,sizeof(SharedMemoryData));
+        
         m_shared_memory.m_data_ptr = (SharedMemoryData*)mmap(0, m_entity_num *sizeof(Record) + sizeof(SharedMemoryData), 
         PROT_READ | PROT_WRITE, MAP_SHARED, m_shared_memory.m_shm_fd, 0);
 
