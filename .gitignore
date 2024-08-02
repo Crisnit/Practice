@@ -42,4 +42,4 @@ SharedMemoryPractice/SHM_server
 .vscode/settings.json
 .vscode/launch.json
 tmp
-bin
+#bin
