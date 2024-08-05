@@ -36,33 +36,33 @@ int main(int argc, char *argv[]) {
             case 0:
                 {
                     int32_t value = std::rand();
-                    shm.addRecord(Record(i, rec_name, Record::int_type, value));
+                    shm.addRecord(Record(i, rec_name, Record::T_INT_TYPE, value));
                 }
                 break;
             case 1:
                 {
                     float value =  std::rand();
                     value /= 10;
-                    shm.addRecord(Record(i, rec_name, Record::float_type, value));
+                    shm.addRecord(Record(i, rec_name, Record::T_FLOAT_TYPE, value));
                 }
                 break;
             case 2:
                 {
                     double value = std::rand();
                     value /= 100;
-                    shm.addRecord(Record(i, rec_name, Record::double_type, value));
+                    shm.addRecord(Record(i, rec_name, Record::T_DOUBLE_TYPE, value));
                 }
                 break;
             case 3:
                 {
                     uint64_t value = std::rand();
-                    shm.addRecord(Record(i, rec_name, Record::uint_type, value));
+                    shm.addRecord(Record(i, rec_name, Record::T_UINT_TYPE, value));
                 }
                 break;
             case 4:
                 {
                     std::string value = "VALUE";
-                    shm.addRecord(Record(i, rec_name, Record::string_type, value));
+                    shm.addRecord(Record(i, rec_name, Record::T_STRING_TYPE, value));
                 }          
                 break;
             }

@@ -44,15 +44,15 @@ public:
         char ch[32];
     };
 
-    enum Type {
-        float_type, 
-        double_type, 
-        int_type, 
-        uint_type, 
-        string_type
+    enum type {
+        T_FLOAT_TYPE, 
+        T_DOUBLE_TYPE, 
+        T_INT_TYPE, 
+        T_UINT_TYPE, 
+        T_STRING_TYPE
     };
 
-    template <typename T> Record(uint32_t id, std::string &t_name, Type type, T &input_value)
+    template <typename T> Record(uint32_t id, std::string &t_name, type type, T &input_value)
         : m_id(id), m_type(type) {
         std::strncpy(m_name, t_name.c_str(), 32);
         m_name [31] = '\0';
@@ -60,7 +60,7 @@ public:
         m_timestamp = getTimestamp();
     };
 
-    Record(uint32_t id, std::string &t_name, Type type, std::string &input_value)
+    Record(uint32_t id, std::string &t_name, type type, std::string &input_value)
         : m_id(id), m_type(type) {
         std::strncpy(m_name, t_name.c_str(), 32);
         m_name [31] = '\0';
@@ -73,16 +73,16 @@ public:
     template <typename T>
     void setDecimalValue(T &input_value) {
         switch (m_type) {
-        case float_type:
+        case T_FLOAT_TYPE:
             m_value.fl = input_value;
             break;
-        case double_type:
+        case T_DOUBLE_TYPE:
             m_value.db = input_value;
             break;
-        case int_type:
+        case T_INT_TYPE:
             m_value.i = input_value;
             break;
-        case uint_type:
+        case T_UINT_TYPE:
             m_value.ui = input_value;
             break;
         }
@@ -94,13 +94,13 @@ public:
     }
 
     template <typename T>
-    void changeValue(Type t_type, T &input_value) {
+    void changeValue(type t_type, T &input_value) {
         m_type = t_type;
         setDecimalValue(input_value);
         m_timestamp = getTimestamp();
     }
 
-    void changeValue(Type t_type, std::string &input_value) {
+    void changeValue(type t_type, std::string &input_value) {
         m_type = t_type;
         setStrValue(input_value);
         m_timestamp = getTimestamp();
@@ -129,7 +129,7 @@ public:
     uint32_t m_id;
     char m_name[32];
     uint64_t m_timestamp;
-    Type m_type;
+    type m_type;
     ValueType m_value;
 };
 
@@ -138,19 +138,19 @@ std::ostream& operator << (std::ostream &os, const Record &rec) {
 
     switch (rec.m_type) 
     {
-    case Record::Type::float_type:
+    case Record::type::T_FLOAT_TYPE:
         return os << "float" << " " << rec.m_value.fl;
         break;
-    case Record::Type::double_type:
+    case Record::type::T_DOUBLE_TYPE:
         return os << "double" << " " << rec.m_value.db;
         break;
-    case Record::Type::int_type:
+    case Record::type::T_INT_TYPE:
         return os << "integer" << " " << rec.m_value.i;
         break;
-    case Record::Type::uint_type:
+    case Record::type::T_UINT_TYPE:
         return os << "unsigned_int" << " " << rec.m_value.ui;
         break;
-    case Record::Type::string_type:
+    case Record::type::T_STRING_TYPE:
         return os << "string" << " " << std::string(rec.m_value.ch);
         break;
     }
@@ -223,7 +223,7 @@ public:
         m_data_ptr->m_mutex.unlock();
     }
     template <typename T>
-    void changeRecordValue(int t_id, Record::Type t_type, T t_value) {
+    void changeRecordValue(int t_id, Record::type t_type, T t_value) {
         m_data_ptr->m_mutex.lock();
         if (m_data_ptr->m_arr_count > 0) 
         {

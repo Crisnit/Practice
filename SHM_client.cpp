@@ -1,13 +1,13 @@
 #include "datawarehousestructs.hpp"
 #include <map>
 
-const std::map<std::string,Record::Type> valueTypes = 
+const std::map<std::string,Record::type> valueTypes = 
 {
-    {"int", Record::Type::int_type},
-    {"double", Record::Type::double_type},
-    {"float", Record::Type::float_type},
-    {"unsigned_int", Record::Type::uint_type},
-    {"string", Record::Type::string_type}
+    {"int", Record::type::T_INT_TYPE},
+    {"double", Record::type::T_DOUBLE_TYPE},
+    {"float", Record::type::T_FLOAT_TYPE},
+    {"unsigned_int", Record::type::T_UINT_TYPE},
+    {"string", Record::type::T_STRING_TYPE}
 };
 
 int main(int argc, char *argv[]) {
@@ -70,28 +70,28 @@ int main(int argc, char *argv[]) {
         {
             switch (v_type->second)
             {
-            case Record::Type::float_type:
+            case Record::type::T_FLOAT_TYPE:
                 {
                     float value = atof(argv[5]);
                     shm.changeRecordValue(id,v_type->second, value);
                 }
                 break;
-            case Record::Type::double_type:
+            case Record::type::T_DOUBLE_TYPE:
                 {
                     double value = std::stod(argv[5]);
                     shm.changeRecordValue(id,v_type->second, value);
                 }
-            case Record::Type::int_type:
+            case Record::type::T_INT_TYPE:
                 {
                     int32_t value = std::stoi(argv[5]);
                     shm.changeRecordValue(id,v_type->second, value);
                 }
-            case Record::Type::uint_type:
+            case Record::type::T_UINT_TYPE:
                 {
                     uint64_t value = std::stoull(argv[5]);
                     shm.changeRecordValue(id,v_type->second, value);
                 }
-            case Record::Type::string_type:
+            case Record::type::T_STRING_TYPE:
                 {
                     std::string value(argv[5]);
                     shm.changeRecordValue(id,v_type->second, value);
