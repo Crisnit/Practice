@@ -10,6 +10,14 @@ set(SOURCE_LIB datawarehousestructs.hpp)
 
 add_library(datawarehousestructs INTERFACE)
 
+add_compile_options(-fsanitize=address)
+
+add_compile_options(-fsanitize=undefined)
+
+add_link_options(-fsanitize=address)
+
+add_link_options(-fsanitize=undefined)
+
 target_include_directories(datawarehousestructs INTERFACE)
 
 add_executable(shm_server ${SOURCE_SERVER_EXE})
