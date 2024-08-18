@@ -14,14 +14,14 @@ add_link_options(-fsanitize=address)
 
 add_link_options(-fsanitize=undefined)
 
-include_directories(datawarehousestructs)
+include_directories(shared_memory_structs)
 
 add_executable(shm_server ${SOURCE_SERVER_EXE})
 
 add_executable(shm_client ${SOURCE_CLIENT_EXE})
 
-add_subdirectory(datawarehousestructs)
+add_subdirectory(shared_memory_structs)
 
-target_link_libraries(shm_server PRIVATE datawarehousestructs)
+target_link_libraries(shm_server PRIVATE shared_memory_structs)
 
-link_libraries(shm_client PRIVATE datawarehousestructs)
+link_libraries(shm_client PRIVATE shared_memory_structs)
