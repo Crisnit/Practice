@@ -13,15 +13,11 @@ class SharedMemoryMutex {
 public:
     SharedMemoryMutex() {
         pthread_mutexattr_t psharedm;
-        pthread_condattr_t psharedc;
 
         pthread_mutexattr_init(&psharedm);
         pthread_mutexattr_setpshared(&psharedm, PTHREAD_PROCESS_SHARED);
-
-        pthread_condattr_init(&psharedc);
-        pthread_condattr_setpshared(&psharedc, PTHREAD_PROCESS_SHARED);
+        
         pthread_mutex_init(&m_lock, &psharedm);
-        pthread_cond_init(&nonzero,&psharedc);
     }
     void lock() {
         pthread_mutex_lock(&m_lock);
@@ -29,8 +25,9 @@ public:
     void unlock() {
         pthread_mutex_unlock(&m_lock);
     }
+    
+    private:
     pthread_mutex_t m_lock;
-    pthread_cond_t nonzero;
 };
 
 
@@ -259,7 +256,6 @@ public:
     SharedMemoryData* m_data_ptr;
     std::string m_name;
     int m_memory_size;
-    int m_elem_size = sizeof(SharedMemoryData);
 };
 
 class SharedMemoryBuilder {
