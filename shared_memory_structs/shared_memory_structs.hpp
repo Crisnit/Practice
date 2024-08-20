@@ -185,7 +185,7 @@ public:
         else 
         {
             m_data_ptr->m_mutex.unlock();
-            throw std::out_of_range("Array is full");
+            std::cout << "Array is full" << std::endl;
         }
     }
 
